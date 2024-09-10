@@ -39,11 +39,12 @@ for i = 1:length(d)
     end
     disp(var)
 
-%%
     nc = ncstruct(filename);
-    %% Prep stack
+    % Prep stack
     nc.(string(var)) = flipud(rot90(nc.(string(var))));
 
+
+%%
     switch var
         case 'tp' % Breytum tp út m/da í mm/month
             nc.(string(var)) = nc.(string(var))*1000*30;
