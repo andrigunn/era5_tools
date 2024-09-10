@@ -36,7 +36,7 @@ for i = 1:length(d)
         var = 'tp';
     else
     end
-
+%%
     nc = ncstruct(filename);
     %% Prep stack
     nc.(string(var)) = flipud(rot90(nc.(string(var))));
