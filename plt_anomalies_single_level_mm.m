@@ -9,6 +9,8 @@ if ismac
     cd /Volumes/data/reanalysis-era5-single-levels-monthly-means/
     img_dir = '/Users/andrigun/Library/CloudStorage/OneDrive-Landsvirkjun/Verkefni - [T] Vatnafarsrannsóknir/Horfur vatnafars/Hofur og staða vatnafars/2024-09-11/'
 elseif isunix
+    addpath /data/git/cdt
+    addpath /data/git/cdt/cdt_data
     cd /data/reanalysis-era5-single-levels-monthly-means/
     img_dir = '/data/tmp/'
 
