@@ -1,0 +1,237 @@
+%2m_temperature.nc
+%sea_level_pressure.nc
+%sea_surface_temperature.nc
+%total_cloud_cover.nc
+%total_column_water_vapour.nc
+%total_precipitation.nc
+
+if ismac
+    cd /Volumes/data/reanalysis-era5-single-levels-monthly-means/
+    img_dir = '/Users/andrigun/Library/CloudStorage/OneDrive-Landsvirkjun/Verkefni - [T] Vatnafarsrannsóknir/Horfur vatnafars/Hofur og staða vatnafars/2024-09-11/'
+elseif isunix
+    cd /data/reanalysis-era5-single-levels-monthly-means/
+    img_dir = '/Users/andrigun/Library/CloudStorage/OneDrive-Landsvirkjun/Verkefni - [T] Vatnafarsrannsóknir/Horfur vatnafars/Hofur og staða vatnafars/2024-09-11/'
+
+end
+
+d = dir('reanalysis-era5-single-levels-monthly-means*.nc')
+
+
+for i = 1:length(d)
+    filename = [d(i).folder,filesep,d(i).name]
+
+
+
+
+    var = 'sst';
+    var = 't2m';
+    var = 'tcc';
+    var = 'tcwv';
+    var = 'msl'
+    var = 'tp';
+
+    nc = ncstruct(filename);
+    %% Prep stack
+    nc.(string(var)) = flipud(rot90(nc.(string(var))));
+
+    switch var
+        case 'tp' % Breytum tp út m/da í mm/month
+            nc.(string(var)) = nc.(string(var))*1000*30;
+        otherwise
+    end
+
+    dateString = num2str([nc.date]);  % Convert number to string
+    nc.Time = datetime(dateString, 'InputFormat', 'yyyyMMdd');
+
+    % Make MM anomalies
+    baseline_period = [datetime(1990,09,30),datetime(2020,10,01)];
+
+    sz = size(nc.(string(var)));
+
+    % Create an empty array of the same size
+    data_ano = nan(sz);
+
+    for i = 1:12
+        %Filter years to use
+        ix = find(...
+            (nc.Time.Year>=baseline_period.Year(1))&...
+            (nc.Time.Year<=baseline_period.Year(2))&...
+            (nc.Time.Month==i));
+
+        mmean = mean(nc.(string(var))(:,:,ix),3,'omitmissing'); % mean for the period, month
+
+        jx = find(...
+            (nc.Time.Month==i));
+
+        nc.Time(jx);
+        nc.Time(ix)
+
+        data_ano(:,:,jx) = nc.(string(var))(:,:,jx)-mmean;
+
+    end
+
+    nc.([char(string(var)),'_anomalies']) = data_ano;
+
+    nc.basePeriod = baseline_period;
+
+    [Lon,Lat] = meshgrid(nc.longitude,nc.latitude);
+
+    [Lat,Lon,nc.([char(string(var)),'_anomalies']),nc.([char(string(var))])] =...
+        recenter(Lat,Lon,nc.([char(string(var)),'_anomalies']) ,nc.([char(string(var))]));
+
+    %%
+
+    reference_period = [datetime(2024,05,01),...
+        datetime(2024,06,01),...
+        datetime(2024,07,01),...
+        datetime(2024,08,01)]
+
+    for k =1:2
+        figure,
+        sx = length(reference_period);
+        if sx <= 4
+            tiledlayout(1,4,"TileSpacing","tight")
+            x = 18;
+            y = 52;
+        elseif sx > 4
+            tiledlayout(2,4,"TileSpacing","tight")
+            x = 36;
+            y = 52;
+        elseif sx == 1
+            x = 18;
+            y = 30;
+        end
+
+        set(0,'defaultfigurepaperunits','centimeters');
+        set(0,'DefaultAxesFontSize',15)
+        set(0,'defaultfigurecolor','w');
+        set(0,'defaultfigureinverthardcopy','off');
+        set(0,'defaultfigurepaperorientation','landscape');
+        set(0,'defaultfigurepapersize',[y x]);
+        set(0,'defaultfigurepaperposition',[.25 .25 [y x]-0.5]);
+        set(0,'DefaultTextInterpreter','none');
+        set(0, 'DefaultFigureUnits', 'centimeters');
+        set(0, 'DefaultFigurePosition', [.25 .25 [y x]-0.5]);
+
+        if k == 1
+            boundary = 'atlantic'
+        elseif k == 2
+            boundary = 'island'
+        end
+
+        switch boundary
+            case 'atlantic'
+                latlimit = [40 75];
+                lonlimit = [-50 30];
+            case 'island'
+                latlimit = [60 70];
+                lonlimit = [-25 -10];
+        end
+
+        for i = 1:sx
+            if sx == 1
+            else
+                nexttile, hold on
+            end
+
+            hold on
+            ix = find(nc.Time==reference_period(i))
+
+            pcolor(double(Lon),double(Lat),nc.([char(string(var)),'_anomalies'])(:,:,ix))
+            shading interp % eliminates black lines between grid cells
+            hold on
+            borders('countries','color',rgb('black'))
+
+            switch var
+                case 'sst'
+                    caxis([-4 4])
+                case 'tp'
+                    caxis([-200 200])
+                case 't2m'
+                    caxis([-3 3])
+                case 'tcc'
+                    caxis([-0.5 0.5])
+                case 'tcwv'
+
+                case 'msl'
+
+                otherwise
+            end
+
+            xlim([lonlimit])
+            ylim([latlimit])
+
+            cmocean('balance','pivot',0) % cold-to-hot colormap
+
+            set(gca,'Color','k')
+            set(0, 'DefaultAxesColor', 'white')
+
+            % Add a colorbar
+            if i == sx
+                colorbarHandle = colorbar;
+                switch var
+                    case 'sst'
+                        colorbarHandle.Label.String = 'SST anomalie (°C)';  % Add label to the colorbar
+                    case 'tp'
+                        colorbarHandle.Label.String = 'Total precipitation anomalie (mm)';  % Add label to the colorbar
+                    case 't2m'
+                        colorbarHandle.Label.String = 'Air temoerature 2m (°C)';  % Add label to the colorbar
+                    case 'tcc'
+                        colorbarHandle.Label.String = 'Total cloud cover (-)';  % Add label to the colorbar
+                    case 'tcwc'
+                        colorbarHandle.Label.String = 'Total interg. water vapor (-)';  % Add label to the colorbar
+                    case 'msl'
+                        colorbarHandle.Label.String = 'Sea level pressure (-)';  % Add label to the colorbar
+                    otherwise
+                end
+                % Customize the colorbar label font color (optional)
+                colorbarHandle.Label.Color = 'w';  % Set colorbar label color to white
+                % Customize the font size (optional)
+                colorbarHandle.Label.FontSize = 15;
+                set(colorbarHandle, 'Color', 'w');  % Set colorbar text color to white
+
+            else
+            end
+            % Change the background color of the figure to black
+            set(gcf, 'Color', 'k');  % 'gcf' is the current figure handle
+            set(gca, 'Color', 'k');  % 'gca' is the current axes handle
+            set(gca, 'XColor', 'w', 'YColor', 'w');  % Set x and y axis color to white
+
+            if sx == 1
+                text(0.99,0.01,[datestr(nc.Time(ix),'mmm yyyy')],...
+                    'Units','normalized','HorizontalAlignment','right',...
+                    'VerticalAlignment','bottom','FontSize',16,'FontWeight','bold',...
+                    'Interpreter','none');
+            else
+                title([datestr(nc.Time(ix),'mmm yyyy')],'Color','w')
+            end
+
+            % Optionally, change the grid lines to white if grid is enabled
+            grid on;
+            set(gca, 'GridColor', 'w');
+
+        end
+
+        switch var
+            case 'sst'
+                sgtitle(['Frávik sjávarhita - Viðmið: 1990-2020'],'color','w','FontSize', 20)
+            case 'tp'
+                sgtitle(['Frávik úrkomu - Viðmið: 1990-2020'],'color','w','FontSize', 20)
+            case 't2m'
+                sgtitle(['Frávik lofthita - Viðmið: 1990-2020'],'color','w','FontSize', 20)
+            case 'tcc'
+                sgtitle(['Frávik skýjahulu - Viðmið: 1990-2020'],'color','w','FontSize', 20)
+            case 'twc'
+                sgtitle(['Frávik tiwc - Viðmið: 1990-2020'],'color','w','FontSize', 20)
+            case 'msl'
+                sgtitle(['Frávik loftþrýstings - Viðmið: 1990-2020'],'color','w','FontSize', 20)
+            otherwise
+        end
+
+
+        img_name = ['era5-single-levels-monthly-anomalies-',var,'_',boundary]
+        exportgraphics(gcf,[img_dir,img_name,'.jpg'], 'BackgroundColor', "k");
+        exportgraphics(gcf,[img_dir,img_name,'.pdf'], 'BackgroundColor', "k");
+
+    end
+end
