@@ -20,22 +20,25 @@ d = dir('reanalysis-era5-single-levels-monthly-means*.nc')
 %%
 
 for i = 1:length(d)
-    filename = [d(i).folder,filesep,d(i).name]
+    filename = [d(i).folder,filesep,d(i).name];
 
     if contains(d(i).name,'2m_temperature')
         var = 't2m';
-    elseif contains(d(i).name,'sea')
+
+    elseif contains(d(i).name,'sea_surface_temperature')
         var = 'sst';
     elseif contains(d(i).name,'cloud')
         var = 'tcc';
     elseif contains(d(i).name,'water')
         var = 'tcwv';
-    elseif contains(d(i).name,'pressure')
-        var = 'msl'
+    elseif contains(d(i).name,'sea_level_pressure')
+        var = 'msl';
     elseif contains(d(i).name,'precip')
         var = 'tp';
     else
     end
+    disp(var)
+
 %%
     nc = ncstruct(filename);
     %% Prep stack
