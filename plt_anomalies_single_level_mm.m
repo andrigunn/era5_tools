@@ -22,7 +22,7 @@ end
 d = dir('reanalysis-era5-single-levels-monthly-means*.nc')
 %%
 
-for i = 1%:length(d)
+for i = 3%:length(d)
     filename = [d(i).folder,filesep,d(i).name];
 
     if contains(d(i).name,'2m_temperature')
@@ -95,10 +95,15 @@ for i = 1%:length(d)
 
     %%
 
-    reference_period = [datetime(2024,05,01),...
-        datetime(2024,06,01),...
-        datetime(2024,07,01),...
-        datetime(2024,08,01)]
+%    reference_period = [datetime(2024,05,01),...
+ %       datetime(2024,06,01),...
+ %       datetime(2024,07,01),...
+ %       datetime(2024,08,01)]
+
+     reference_period = [datetime(2023,09,01),...
+        datetime(2023,10,01),...
+        datetime(2023,11,01),...
+        datetime(2023,12,01)]
 
     for k =1:2
         figure,
@@ -243,9 +248,9 @@ for i = 1%:length(d)
         end
 
 
-        img_name = ['era5-single-levels-monthly-anomalies-',var,'_',boundary]
-        exportgraphics(gcf,[img_dir,img_name,'.jpg'], 'BackgroundColor', "k");
-        exportgraphics(gcf,[img_dir,img_name,'.pdf'], 'BackgroundColor', "k");
+%        img_name = ['era5-single-levels-monthly-anomalies-',var,'_',boundary]
+%        exportgraphics(gcf,[img_dir,img_name,'.jpg'], 'BackgroundColor', "k");
+%        exportgraphics(gcf,[img_dir,img_name,'.pdf'], 'BackgroundColor', "k");
 
     end
 end
