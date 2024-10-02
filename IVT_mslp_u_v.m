@@ -119,7 +119,6 @@ for k = 1:length(d)
     N.(string(var)) = nc;
 
 end
-%%
 
 %%
 % N is what we use
